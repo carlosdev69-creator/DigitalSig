@@ -97,15 +97,18 @@
         setInterval(rotateSlides, CONFIG.INTERVAL_SLIDE);
 
         // BUSCA DE DADOS (VERSÃO ROBUSTA PARA VERCEL)
-        async function getSafeData(url) {
+async function getSafeData(url) {
             try {
-                // Usando o proxy com bypass de cache agressivo
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&callback=?&_=${new Date().getTime()}`;
-                const response = await fetch(proxyUrl);
-                const json = await response.json();
-                return JSON.parse(json.contents);
+                // Adicionamos um cabeçalho falso de navegador para o proxy não nos barrar
+                const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                if (!response.ok) throw new Error('Proxy recusou');
+                return await response.json();
             } catch (e) {
-                console.error("Erro na URL: " + url, e);
+                console.error("Erro na busca:", url, e);
                 return null;
             }
         }
@@ -145,19 +148,24 @@
             }
         }
 
-        async function updateNews() {
+async function updateNews() {
             try {
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}&_=${new Date().getTime()}`;
-                const res = await fetch(proxyUrl);
-                const json = await res.json();
-                const items = new DOMParser().parseFromString(json.contents, "text/xml").querySelectorAll("item");
+                const url = `https://corsproxy.io/?${encodeURIComponent(CONFIG.NEWS_RSS)}`;
+                const res = await fetch(url);
+                const text = await res.text(); // Notícias vêm em formato Texto/XML
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                const items = xmlDoc.querySelectorAll("item");
                 const container = document.getElementById('news-container');
-                if (items.length > 0) {
+                
+                if (items && items.length > 0) {
                     container.innerHTML = Array.from(items).slice(0, 4).map(i => 
                         `<div class="news-item"><h4>${i.querySelector("title").textContent}</h4></div>`
                     ).join('');
                 }
             } catch (e) {
+                console.error("Erro news:", e);
                 document.getElementById('news-container').innerText = "Erro ao buscar Notícias G1";
             }
         }
