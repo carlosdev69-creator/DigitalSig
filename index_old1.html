@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Digital Signage - Americana SP</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(15, 23, 42, 0.8);
+            --text-main: #f8fafc;
+            --accent: #38bdf8;
+            --loto-color: #9b51e0;
+            --shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 3vh 5vw;
+        }
+
+        /* --- Header: Hierarquia Visual --- */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            z-index: 10;
+        }
+
+        #date {
+            font-size: 1.6rem;
+            color: var(--accent);
+            letter-spacing: 4px;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        #clock {
+            font-size: 6rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        /* --- Clima (Canto Superior Direito) --- */
+        #weather-widget {
+            position: absolute;
+            top: 3vh;
+            right: 5vw;
+            text-align: right;
+        }
+
+        #temp { font-size: 2.5rem; font-weight: bold; }
+        #condition { font-size: 1rem; color: var(--accent); text-transform: capitalize; }
+
+        /* --- Main: Slides com Fade --- */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+            
+            /* Efeito Fade */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1s ease-in-out, visibility 1s;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        h2 { 
+            margin-bottom: 2rem; 
+            font-size: 2rem; 
+            border-left: 5px solid var(--accent);
+            padding-left: 1rem;
+        }
+
+        /* --- Grid Lotofácil (3x5) --- */
+        .loto-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 20px;
+            justify-items: center;
+        }
+
+        .ball {
+            width: 70px;
+            height: 70px;
+            background: var(--loto-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3), 5px 5px 15px rgba(0,0,0,0.4);
+        }
+
+        /* --- Notícias --- */
+        .news-item {
+            padding: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .news-item:last-child { border-bottom: none; }
+        .news-item h4 { font-size: 1.4rem; font-weight: 500; }
+
+        /* --- Footer: Logo Fixa --- */
+        footer {
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .logo-container img {
+            max-height: 70px;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+        }
+    </style>
+</head>
+<body>
+
+    <div id="weather-widget">
+        <div id="temp">--°C</div>
+        <div id="condition">Carregando...</div>
+    </div>
+
+    <header>
+        <div id="date">--/--/----</div>
+        <div id="clock">00:00:00</div>
+    </header>
+
+    <main>
+        <div id="slide-lottery" class="slide active">
+            <h2 id="lottery-title">Lotofácil - Carregando...</h2>
+            <div id="lottery-results" class="loto-grid">
+                </div>
+        </div>
+
+        <div id="slide-news" class="slide">
+            <h2>G1 - Região de Campinas</h2>
+            <div id="news-container">
+                <p>Buscando notícias...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="logo-container">
+            <img src="logo-empresa.png" alt="Logo">
+        </div>
+    </footer>
+
+    <script>
+        const CONFIG = {
+            CITY: 'Americana,BR',
+            WEATHER_KEY: '83f925224e5f8488f26a6bb9831e3304', // INSIRA SUA CHAVE AQUI
+            NEWS_RSS: 'https://g1.globo.com/rss/g1/sp/campinas-regiao/',
+            INTERVAL_SLIDE: 15000 
+        };
+
+        // --- Relógio ---
+        function updateClock() {
+            const now = new Date();
+            const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('date').innerText = now.toLocaleDateString('pt-BR', optionsDate).toUpperCase();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('pt-BR');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Controle de Slides ---
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        function rotateSlides() {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        setInterval(rotateSlides, CONFIG.INTERVAL_SLIDE);
+
+        // --- API Clima ---
+        async function fetchWeather() {
+            try {
+                const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CONFIG.CITY}&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
+                document.getElementById('condition').innerText = data.weather[0].description;
+            } catch (err) {
+                document.getElementById('temp').innerText = "--°C";
+                document.getElementById('condition').innerText = "Clima indisponível";
+            }
+        }
+
+        // --- API Lotofácil (Com suporte a Concurso) ---
+        async function fetchLottery() {
+            const grid = document.getElementById('lottery-results');
+            const title = document.getElementById('lottery-title');
+
+            try {
+                // Fonte estável para evitar problemas de CORS da Caixa em localhost
+                const res = await fetch('https://api.guidi.dev.br/loteria/lotofacil/ultimo');
+                const data = await res.json();
+                
+                title.innerText = `Lotofácil - Concurso ${data.numero}`;
+                grid.innerHTML = '';
+                
+                data.listaDezenas.forEach(num => {
+                    const ball = document.createElement('div');
+                    ball.className = 'ball';
+                    ball.innerText = num;
+                    grid.appendChild(ball);
+                });
+            } catch (err) {
+                console.error("Erro Loteria:", err);
+                title.innerText = "Lotofácil - Resultados";
+                grid.innerHTML = "<p>Erro ao carregar resultados da loteria.</p>";
+            }
+        }
+
+        // --- API Notícias G1 (Via Proxy JSON para evitar CORS) ---
+        async function fetchNews() {
+            const container = document.getElementById('news-container');
+            
+            // Usaremos o AllOrigins que é mais robusto para XMLs diretos como o do G1
+            try {
+                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                const data = await response.json();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const items = xmlDoc.querySelectorAll("item");
+                
+                if (items.length > 0) {
+                    container.innerHTML = ''; // Limpa o "Carregando"
+                    
+                    // Pega as 4 primeiras notícias do XML
+                    Array.from(items).slice(0, 4).forEach(item => {
+                        const title = item.querySelector("title").textContent;
+                        const div = document.createElement('div');
+                        div.className = 'news-item';
+                        div.innerHTML = `<h4>${title}</h4>`;
+                        container.appendChild(div);
+                    });
+                    console.log("Notícias G1 carregadas com sucesso!");
+                } else {
+                    throw new Error("XML lido, mas sem itens.");
+                }
+            } catch (err) {
+                console.error("Erro ao processar RSS do G1:", err);
+                container.innerHTML = "<p>Erro ao conectar com G1 Campinas. Verifique a conexão.</p>";
+            }
+        }
+        // Início rápido
+        fetchWeather();
+        fetchLottery();
+        fetchNews();
+
+        // Atualizações automáticas (para rodar 24/7)
+        setInterval(fetchWeather, 600000);  // 10 min
+        setInterval(fetchLottery, 3600000); // 1 hora
+        setInterval(fetchNews, 1800000);    // 30 min
+    </script>
+</body>
+</html>

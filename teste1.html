@@ -1,0 +1,24 @@
+    </script>
+</body>
+</html>
+
+fetchWeather();
+        
+        // ATUALIZAÇÕES PERIÓDICAS
+        setInterval(fetchWeather, 600000);  // 10 min
+
+async function fetchWeather() {
+            try {
+                const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CONFIG.CITY}&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`);
+                const data = await res.json();
+                if(data.main) {
+                    document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
+                    document.getElementById('condition').innerText = data.weather[0].description;
+                }
+            } catch (e) { console.log("Rede restrita: Clima em modo offline"); }
+        }
+
+
+            </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Signage - Americana SP</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --accent: #38bdf8;
+            --loto-color: #9b51e0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg-gradient); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; padding: 3vh 5vw; }
+        header { text-align: center; margin-bottom: 2rem; }
+        #date { font-size: 1.6rem; color: var(--accent); letter-spacing: 4px; margin-bottom: 0.5rem; text-transform: uppercase; }
+        #clock { font-size: 6rem; font-weight: 800; line-height: 1; }
+        #weather-widget { position: absolute; top: 3vh; right: 5vw; text-align: right; }
+        #temp { font-size: 2.5rem; font-weight: bold; }
+        #condition { font-size: 1rem; color: var(--accent); }
+        main { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; }
+        .slide { position: absolute; width: 100%; max-width: 1000px; background: var(--card-bg); padding: 3rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); opacity: 0; visibility: hidden; transition: opacity 1s ease-in-out; }
+        .slide.active { opacity: 1; visibility: visible; }
+        h2 { margin-bottom: 2rem; font-size: 2rem; border-left: 5px solid var(--accent); padding-left: 1rem; }
+        .loto-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+        .ball { width: 65px; height: 65px; background: var(--loto-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: bold; box-shadow: 4px 4px 10px rgba(0,0,0,0.4); }
+        .news-item { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .news-item h4 { font-size: 1.3rem; font-weight: 400; }
+        footer { height: 100px; display: flex; justify-content: center; align-items: center; }
+        .logo-container img { max-height: 70px; }
+    </style>
+</head>
+<body>
+
+    <div id="weather-widget">
+        <div id="temp">26°C</div>
+        <div id="condition">Americana/SP</div>
+    </div>
+
+    <header>
+        <div id="date">--</div>
+        <div id="clock">00:00:00</div>
+    </header>
+
+    <main>
+        <div id="slide-lottery" class="slide active">
+            <h2 id="lottery-title">Lotofácil - Concurso 3074</h2>
+            <div id="lottery-results" class="loto-grid">
+                <div class="ball">01</div><div class="ball">03</div><div class="ball">05</div><div class="ball">08</div><div class="ball">09</div>
+                <div class="ball">12</div><div class="ball">13</div><div class="ball">15</div><div class="ball">17</div><div class="ball">18</div>
+                <div class="ball">20</div><div class="ball">21</div><div class="ball">22</div><div class="ball">24</div><div class="ball">25</div>
+            </div>
+        </div>
+
+        <div id="slide-news" class="slide">
+            <h2>G1 - Região de Campinas</h2>
+            <div id="news-container">
+                <div class="news-item"><h4>Carregando as últimas notícias da região...</h4></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="logo-container"><img src="logo-empresa.png" alt="Logo"></div>
+    </footer>
+
+    <script>
+        const CONFIG = {
+            CITY: 'Americana,BR',
+            WEATHER_KEY: 'SUA_API_KEY_AQUI', 
+            NEWS_RSS: 'https://g1.globo.com/rss/g1/sp/campinas-regiao/',
+            INTERVAL_SLIDE: 15000 
+        };
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('date').innerText = now.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+            document.getElementById('clock').innerText = now.toLocaleTimeString('pt-BR');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        let currentSlide = 0;
+        function rotateSlides() {
+            const slides = document.querySelectorAll('.slide');
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        setInterval(rotateSlides, CONFIG.INTERVAL_SLIDE);
+
+        async function fetchWeather() {
+            try {
+                const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CONFIG.CITY}&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`);
+                const data = await res.json();
+                if(data.main) {
+                    document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
+                    document.getElementById('condition').innerText = data.weather[0].description;
+                }
+            } catch (e) { console.log("Rede restrita: Clima em modo offline"); }
+        }
+
+        async function fetchLottery() {
+            try {
+                const res = await fetch('https://api.guidi.dev.br/loteria/lotofacil/ultimo');
+                const data = await res.json();
+                if(data.listaDezenas) {
+                    document.getElementById('lottery-title').innerText = `Lotofácil - Concurso ${data.numero}`;
+                    const grid = document.getElementById('lottery-results');
+                    grid.innerHTML = '';
+                    data.listaDezenas.forEach(num => { grid.innerHTML += `<div class="ball">${num}</div>`; });
+                }
+            } catch (e) { console.log("Rede restrita: Loteria em modo offline"); }
+        }
+
+        async function fetchNews() {
+            const container = document.getElementById('news-container');
+            
+            // Tentativa com um proxy diferente (Corsproxy.io) - costuma passar por firewalls corporativos
+            try {
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                const text = await res.text(); // Aqui pegamos o texto puro do XML
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                const items = xmlDoc.querySelectorAll("item");
+                
+                if (items.length > 0) {
+                    container.innerHTML = '';
+                    Array.from(items).slice(0, 4).forEach(item => {
+                        const title = item.querySelector("title").textContent;
+                        container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
+                    });
+                    console.log("Notícias carregadas via CorsProxy!");
+                }
+            } catch (e) { 
+                console.error("Proxy 1 falhou, tentando Proxy 2...");
+                
+                // Segunda tentativa com outro serviço (Base64 Proxy)
+                try {
+                    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                    const data = await res.json();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                    const items = xmlDoc.querySelectorAll("item");
+                    if(items.length > 0) {
+                        container.innerHTML = '';
+                        Array.from(items).slice(0, 4).forEach(item => {
+                            const title = item.querySelector("title").textContent;
+                            container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
+                        });
+                    }
+                } catch (err) {
+                    console.log("Rede ainda bloqueando. Mantendo modo offline.");
+                }
+            }
+        }
+        fetchWeather(); fetchLottery(); fetchNews();
+        setInterval(fetchWeather, 600000);
+        setInterval(fetchLottery, 3600000);
+        setInterval(fetchNews, 1800000);
+    </script>
+</body>
+</html>

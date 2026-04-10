@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signage Dashboard - Americana/SP</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --accent: #38bdf8;
+            --loto-color: #9b51e0;
+            --mega-color: #209869;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 3vh 5vw;
+        }
+
+        /* --- HEADER: Hierarquia Visual (Data topo, Hora abaixo) --- */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-top: 1rem;
+            /*z-index: 10;      */
+        }
+
+        #date {
+            font-size: 1.6rem;
+            color: var(--accent);
+            letter-spacing: 4px;
+            font-weight: 300;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        #clock {
+            font-size: 6rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        /* --- CLIMA (Topo Direito) --- */
+        #weather-widget {
+            position: absolute;
+            top: 3vh;
+            right: 5vw;
+            text-align: right;
+        }
+        #temp { font-size: 2.5rem; font-weight: bold; }
+        #condition { font-size: 1rem; text-transform: capitalize; }
+        #location { font-size: 1rem; color: var(--accent); text-transform: capitalize; }
+
+        /* --- PAINEL CENTRAL: Slides com Efeito Fade --- */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            
+            /* Efeito Fade */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1s ease-in-out, visibility 1s;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        h2 { 
+            margin-bottom: 2rem; 
+            font-size: 2rem; 
+            border-left: 6px solid var(--accent);
+            padding-left: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- GRIDS DE LOTERIA --- */
+        .loto-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            justify-items: center;
+        }
+
+        .mega-grid {
+            grid-template-columns: repeat(6, 1fr) !important;
+        }
+
+        .ball {
+            width: 75px;
+            height: 75px;
+            background: var(--loto-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.3), 5px 5px 15px rgba(0,0,0,0.4);
+        }
+
+        .mega-grid .ball { background: var(--mega-color); }
+
+        /* --- NOTÍCIAS --- */
+        .news-item {
+            padding: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .news-item:last-child { border-bottom: none; }
+        .news-item h4 { font-size: 1.4rem; font-weight: 400; line-height: 1.4; }
+
+        /* --- RODAPÉ: Logo Fixa --- */
+        footer {
+            height: 200px;
+            /*display: flex; ***alterado para logo foi ppra cima*/ 
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        /* Posicionamento do Logo (Superior Esquerdo) */
+        .logo-container {
+            position: absolute;
+            top: 3vh;
+            left: 5vw;
+            z-index: 20;
+        }
+        .logo-container img {
+            max-height: 100px; /* Ajuste conforme o tamanho da sua logo */
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="logo-empresa.png" alt="Logo Empresa">
+    </div>
+
+    <div id="weather-widget">
+        <div id="temp">--°C</div>
+        <div id="condition">Carregando clima...</div>
+        <div id="location">Americana/SP</div>
+    </div>
+
+    <header>
+        <div id="date">--</div>
+        <div id="clock">00:00:00</div>
+    </header>
+
+    <main>
+        <div id="slide-lottery" class="slide active">
+            <h2 id="lottery-title">Lotofácil</h2>
+            <div id="lottery-results" class="loto-grid">
+                </div>
+        </div>
+
+        <div id="slide-mega" class="slide">
+            <h2 id="mega-title" style="border-left-color: var(--mega-color);">Mega-Sena</h2>
+            <div id="mega-results" class="loto-grid mega-grid">
+                </div>
+        </div>
+
+        <div id="slide-news" class="slide">
+            <h2>G1 - Região de Campinas</h2>
+            <div id="news-container">
+                <p>Buscando últimas notícias...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+
+    </footer>
+
+    <script>
+        const CONFIG = {
+            CITY: 'Americana,BR',
+            WEATHER_KEY: '83f925224e5f8488f26a6bb9831e3304', 
+            NEWS_RSS: 'https://g1.globo.com/rss/g1/sp/campinas-regiao/',
+            INTERVAL_SLIDE: 15000 
+        };
+
+        // --- RELÓGIO INDEPENDENTE ---
+        function updateClock() {
+            const now = new Date();
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('date').innerText = now.toLocaleDateString('pt-BR', options);
+            document.getElementById('clock').innerText = now.toLocaleTimeString('pt-BR');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- ROTAÇÃO DE SLIDES ---
+        let currentSlide = 0;
+        function rotateSlides() {
+            const slides = document.querySelectorAll('.slide');
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        setInterval(rotateSlides, CONFIG.INTERVAL_SLIDE);
+
+        // --- CLIMA ---
+        
+async function fetchWeather() {
+    try {
+        // Removi o ",BR" para evitar erros de codificação no proxy e usei apenas o ID ou nome simples
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=Americana&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`;
+        
+        // Usando o proxy que já provou que funciona na sua rede
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+        const data = await res.json();
+        
+        if (data && data.main) {
+            document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
+            document.getElementById('condition').innerText = data.weather[0].description;
+            console.log("Clima atualizado com sucesso!");
+        } else {
+            // Se a API responder mas sem dados (ex: chave inválida)
+            console.error("Erro na resposta do Clima:", data.message);
+            document.getElementById('condition').innerText = "Verificar Chave API";
+        }
+    } catch (e) {
+        console.error("Erro na conexão do clima:", e);
+        document.getElementById('condition').innerText = "Clima indisponível";
+    }
+}
+
+        // --- LOTERIAS (LOTOFÁCIL E MEGA-SENA) ---
+        async function fetchLoterias() {
+            const PROXY = "https://corsproxy.io/?";
+            const API_BASE = "https://loteriascaixa-api.herokuapp.com/api";
+
+            // Busca Mega-Sena
+            try {
+                const urlMega = `${API_BASE}/megasena/latest`;
+                const res = await fetch(PROXY + encodeURIComponent(urlMega));
+                const data = await res.json();
+                
+                document.getElementById('mega-title').innerText = `Mega-Sena - Concurso ${data.concurso}`;
+                const gridMega = document.getElementById('mega-results');
+                gridMega.innerHTML = '';
+                data.dezenas.forEach(num => {
+                    gridMega.innerHTML += `<div class="ball">${num}</div>`;
+                });
+            } catch (e) { console.error("Erro Mega-Sena"); }
+
+            // Busca Lotofácil
+            try {
+                const urlLoto = `${API_BASE}/lotofacil/latest`;
+                const res = await fetch(PROXY + encodeURIComponent(urlLoto));
+                const data = await res.json();
+                
+                document.getElementById('lottery-title').innerText = `Lotofácil - Concurso ${data.concurso}`;
+                const gridLoto = document.getElementById('lottery-results');
+                gridLoto.innerHTML = '';
+                data.dezenas.forEach(num => {
+                    gridLoto.innerHTML += `<div class="ball">${num}</div>`;
+                });
+            } catch (e) { console.error("Erro Lotofácil"); }
+        }
+
+        // --- NOTÍCIAS G1 (USANDO PROXY RESILIENTE) ---
+        async function fetchNews() {
+            const container = document.getElementById('news-container');
+            try {
+                // Tentativa com CorsProxy.io (mais eficaz em redes restritas)
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                const text = await res.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                const items = xmlDoc.querySelectorAll("item");
+                
+                if (items.length > 0) {
+                    container.innerHTML = '';
+                    Array.from(items).slice(0, 4).forEach(item => {
+                        const title = item.querySelector("title").textContent;
+                        container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
+                    });
+                }
+            } catch (e) {
+                console.warn("Proxy primário falhou, tentando secundário...");
+                // Segundo fallback para garantir a entrega
+                try {
+                    const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                    const data2 = await res2.json();
+                    const parser2 = new DOMParser();
+                    const xmlDoc2 = parser2.parseFromString(data2.contents, "text/xml");
+                    const items2 = xmlDoc2.querySelectorAll("item");
+                    if(items2.length > 0) {
+                        container.innerHTML = '';
+                        Array.from(items2).slice(0, 4).forEach(item => {
+                            container.innerHTML += `<div class="news-item"><h4>${item.querySelector("title").textContent}</h4></div>`;
+                        });
+                    }
+                } catch (err) {
+                    container.innerHTML = "<p>Notícias temporariamente indisponíveis (bloqueio de rede).</p>";
+                }
+            }
+        }
+
+        // INICIALIZAÇÃO
+        fetchWeather();
+        fetchLoterias();
+        fetchNews();
+
+        // ATUALIZAÇÕES PERIÓDICAS
+        setInterval(fetchWeather, 600000);  // 10 min
+        setInterval(fetchLoterias, 3600000); // 1 hora
+        setInterval(fetchNews, 1800000);    // 30 min
+    </script>
+</body>
+</html>
