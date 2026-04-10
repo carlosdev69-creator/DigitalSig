@@ -233,87 +233,103 @@
 
         // --- CLIMA ---
         
-        async function fetchWeather() {
+async function fetchWeather() {
+    try {
+        // Removi o ",BR" para evitar erros de codificação no proxy e usei apenas o ID ou nome simples
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=Americana&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`;
+        
+        // Usando o proxy que já provou que funciona na sua rede
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+        const data = await res.json();
+        
+        if (data && data.main) {
+            document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
+            document.getElementById('condition').innerText = data.weather[0].description;
+            console.log("Clima atualizado com sucesso!");
+        } else {
+            // Se a API responder mas sem dados (ex: chave inválida)
+            console.error("Erro na resposta do Clima:", data.message);
+            document.getElementById('condition').innerText = "Verificar Chave API";
+        }
+    } catch (e) {
+        console.error("Erro na conexão do clima:", e);
+        document.getElementById('condition').innerText = "Clima indisponível";
+    }
+}
+
+        // --- LOTERIAS (LOTOFÁCIL E MEGA-SENA) ---
+        async function fetchLoterias() {
+            const PROXY = "https://corsproxy.io/?";
+            const API_BASE = "https://loteriascaixa-api.herokuapp.com/api";
+
+            // Busca Mega-Sena
             try {
-                const url = `https://api.openweathermap.org/data/2.5/weather?q=Americana&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`;
-                // Trocando para o AllOrigins que é mais estável com HTTPS da Vercel
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-                const json = await res.json();
-                const data = JSON.parse(json.contents);
+                const urlMega = `${API_BASE}/megasena/latest`;
+                const res = await fetch(PROXY + encodeURIComponent(urlMega));
+                const data = await res.json();
                 
-                if (data && data.main) {
-                    document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
-                    document.getElementById('condition').innerText = data.weather[0].description;
+                document.getElementById('mega-title').innerText = `Mega-Sena - Concurso ${data.concurso}`;
+                const gridMega = document.getElementById('mega-results');
+                gridMega.innerHTML = '';
+                data.dezenas.forEach(num => {
+                    gridMega.innerHTML += `<div class="ball">${num}</div>`;
+                });
+            } catch (e) { console.error("Erro Mega-Sena"); }
+
+            // Busca Lotofácil
+            try {
+                const urlLoto = `${API_BASE}/lotofacil/latest`;
+                const res = await fetch(PROXY + encodeURIComponent(urlLoto));
+                const data = await res.json();
+                
+                document.getElementById('lottery-title').innerText = `Lotofácil - Concurso ${data.concurso}`;
+                const gridLoto = document.getElementById('lottery-results');
+                gridLoto.innerHTML = '';
+                data.dezenas.forEach(num => {
+                    gridLoto.innerHTML += `<div class="ball">${num}</div>`;
+                });
+            } catch (e) { console.error("Erro Lotofácil"); }
+        }
+
+        // --- NOTÍCIAS G1 (USANDO PROXY RESILIENTE) ---
+        async function fetchNews() {
+            const container = document.getElementById('news-container');
+            try {
+                // Tentativa com CorsProxy.io (mais eficaz em redes restritas)
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                const text = await res.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                const items = xmlDoc.querySelectorAll("item");
+                
+                if (items.length > 0) {
+                    container.innerHTML = '';
+                    Array.from(items).slice(0, 4).forEach(item => {
+                        const title = item.querySelector("title").textContent;
+                        container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
+                    });
                 }
-            } catch (e) { 
-                document.getElementById('condition').innerText = "Verificar Chave API";
+            } catch (e) {
+                console.warn("Proxy primário falhou, tentando secundário...");
+                // Segundo fallback para garantir a entrega
+                try {
+                    const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}`);
+                    const data2 = await res2.json();
+                    const parser2 = new DOMParser();
+                    const xmlDoc2 = parser2.parseFromString(data2.contents, "text/xml");
+                    const items2 = xmlDoc2.querySelectorAll("item");
+                    if(items2.length > 0) {
+                        container.innerHTML = '';
+                        Array.from(items2).slice(0, 4).forEach(item => {
+                            container.innerHTML += `<div class="news-item"><h4>${item.querySelector("title").textContent}</h4></div>`;
+                        });
+                    }
+                } catch (err) {
+                    container.innerHTML = "<p>Notícias temporariamente indisponíveis (bloqueio de rede).</p>";
+                }
             }
         }
 
-        // --- LOTERIAS (LOTOFÁCIL E MEGA-SENA) ---
-async function fetchLoterias() {
-    const PROXY = "https://api.allorigins.win/get?url=";
-    const API_BASE = "https://loteriascaixa-api.herokuapp.com/api";
-
-    // Mega-Sena
-    try {
-        const urlMega = `${API_BASE}/megasena/latest`;
-        const res = await fetch(PROXY + encodeURIComponent(urlMega));
-        const json = await res.json();
-        const data = JSON.parse(json.contents);
-        
-        // Ajuste de mapeamento: verificando se é 'concurso' ou 'numero'
-        const numeroConcurso = data.concurso || data.numero;
-        document.getElementById('mega-title').innerText = `Mega-Sena - Concurso ${numeroConcurso}`;
-        
-        const gridMega = document.getElementById('mega-results');
-        gridMega.innerHTML = '';
-        const dezenas = data.dezenas || data.listaDezenas;
-        dezenas.forEach(num => {
-            gridMega.innerHTML += `<div class="ball">${num}</div>`;
-        });
-    } catch (e) { console.error("Erro Megasena"); }
-
-    // Lotofácil
-    try {
-        const urlLoto = `${API_BASE}/lotofacil/latest`;
-        const res = await fetch(PROXY + encodeURIComponent(urlLoto));
-        const json = await res.json();
-        const data = JSON.parse(json.contents);
-        
-        const numeroConcurso = data.concurso || data.numero;
-        document.getElementById('lottery-title').innerText = `Lotofácil - Concurso ${numeroConcurso}`;
-        
-        const gridLoto = document.getElementById('lottery-results');
-        gridLoto.innerHTML = '';
-        const dezenas = data.dezenas || data.listaDezenas;
-        dezenas.forEach(num => {
-            gridLoto.innerHTML += `<div class="ball">${num}</div>`;
-        });
-    } catch (e) { console.error("Erro Lotofácil"); }
-}
-
-        // --- NOTÍCIAS G1 (USANDO PROXY RESILIENTE) ---
- async function fetchNews() {
-    try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}`);
-        const json = await res.json();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(json.contents, "text/xml");
-        const items = xmlDoc.querySelectorAll("item");
-        const container = document.getElementById('news-container');
-        
-        if (items.length > 0) {
-            container.innerHTML = '';
-            Array.from(items).slice(0, 4).forEach(item => {
-                const title = item.querySelector("title").textContent;
-                container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
-            });
-        }
-    } catch (e) {
-        document.getElementById('news-container').innerHTML = "Notícias indisponíveis no momento.";
-    }
-}
         // INICIALIZAÇÃO
         fetchWeather();
         fetchLoterias();
