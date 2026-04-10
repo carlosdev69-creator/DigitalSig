@@ -146,20 +146,23 @@
         }
         setInterval(rotateSlides, CONFIG.INTERVAL_SLIDE);
 
-        // BUSCA DE DADOS COM TRATAMENTO DE CACHE E PROXY
-        async function fetchData(url) {
-            try {
-                // Adicionamos timestamp (&t=) para forçar a Vercel a buscar dados novos
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                // O AllOrigins pode retornar o dado como string ou objeto, tratamos ambos:
-                return typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
-            } catch (e) {
-                console.error("Erro na busca:", url, e);
-                return null;
-            }
-        }
+// --- NOVA FUNÇÃO DE BUSCA (ESTRATÉGIA VERCEL) ---
+async function fetchData(url) {
+    try {
+        // Usando corsproxy.io que é mais direto e estável para HTTPS
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        
+        if (!response.ok) throw new Error('Erro na rede');
+        
+        // Esta API retorna o dado direto, sem precisar do .contents
+        const data = await response.json();
+        return data;
+    } catch (e) {
+        console.error("Falha na busca:", url, e);
+        return null;
+    }
+}
 
         async function fetchWeather() {
             const url = `https://api.openweathermap.org/data/2.5/weather?q=Americana,BR&units=metric&lang=pt_br&appid=${CONFIG.WEATHER_KEY}`;
@@ -198,27 +201,29 @@
             }
         }
 
-        async function fetchNews() {
-            try {
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(CONFIG.NEWS_RSS)}&t=${Date.now()}`);
-                const data = await res.json();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
-                const items = xmlDoc.querySelectorAll("item");
-                const container = document.getElementById('news-container');
-                
-                if (items.length > 0) {
-                    container.innerHTML = '';
-                    Array.from(items).slice(0, 4).forEach(item => {
-                        const title = item.querySelector("title").textContent;
-                        container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
-                    });
-                }
-            } catch (e) { 
-                console.error("Erro News", e); 
-                document.getElementById('news-container').innerHTML = "Notícias indisponíveis no momento.";
-            }
+// --- NOTÍCIAS (AJUSTADA) ---
+async function fetchNews() {
+    try {
+        const url = `https://corsproxy.io/?${encodeURIComponent(CONFIG.NEWS_RSS)}`;
+        const res = await fetch(url);
+        const text = await res.text();
+        
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "text/xml");
+        const items = xmlDoc.querySelectorAll("item");
+        const container = document.getElementById('news-container');
+        
+        if (items.length > 0) {
+            container.innerHTML = '';
+            Array.from(items).slice(0, 4).forEach(item => {
+                const title = item.querySelector("title").textContent;
+                container.innerHTML += `<div class="news-item"><h4>${title}</h4></div>`;
+            });
         }
+    } catch (e) { 
+        console.error("Erro News", e);
+    }
+}
 
         // INICIALIZAÇÃO E INTERVALOS
         fetchWeather(); fetchLoterias(); fetchNews();
