@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Digital Signage - Americana</title>
-
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -30,27 +29,6 @@
       display: flex;
       flex-direction: column;
       padding: 3vh 5vw;
-      position: relative;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.10), transparent 30%),
-        radial-gradient(circle at 80% 15%, rgba(155, 81, 224, 0.10), transparent 25%),
-        radial-gradient(circle at 50% 80%, rgba(32, 152, 105, 0.08), transparent 30%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .logo-container,
-    #weather-widget,
-    header,
-    main {
-      position: relative;
-      z-index: 1;
     }
 
     .logo-container {
@@ -70,13 +48,6 @@
       top: 3vh;
       right: 5vw;
       text-align: right;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 18px;
-      padding: 0.9rem 1rem;
-      min-width: 180px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-      backdrop-filter: blur(12px);
     }
 
     #temp {
@@ -104,18 +75,16 @@
     }
 
     #date {
-      font-size: 1.15rem;
+      font-size: 1.5rem;
       color: var(--accent);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      opacity: 0.9;
+      letter-spacing: 2px;
     }
 
     #clock {
-      font-size: 5.8rem;
+      font-size: 6.5rem;
       font-weight: 800;
       line-height: 1;
-      text-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     }
 
     main {
@@ -129,34 +98,27 @@
     .slide {
       position: absolute;
       width: 100%;
-      max-width: 1100px;
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.82), rgba(15, 23, 42, 0.9));
-      padding: 3.2rem;
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(18px);
-      box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      max-width: 1000px;
+      background: var(--card-bg);
+      padding: 3rem;
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(15px);
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
-      transform: translateY(8px);
+      transition: opacity 1s ease-in-out;
     }
 
     .slide.active {
       opacity: 1;
       visibility: visible;
-      transform: translateY(0);
     }
 
     h2 {
       margin-bottom: 2rem;
-      font-size: 2.2rem;
-      font-weight: 700;
-      border-left: 5px solid var(--accent);
-      padding-left: 1rem;
-      line-height: 1.2;
+      font-size: 2rem;
+      border-left: 6px solid var(--accent);
+      padding-left: 1.5rem;
     }
 
     .loto-grid {
@@ -171,42 +133,31 @@
     }
 
     .ball {
-      width: 64px;
-      height: 64px;
+      width: 70px;
+      height: 70px;
+      background: var(--loto-color);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.55rem;
-      font-weight: 700;
-      color: #fff;
-      background: radial-gradient(circle at 30% 30%, #b76cff, #7c2fd1);
-      box-shadow:
-        inset 0 2px 8px rgba(255, 255, 255, 0.18),
-        0 8px 20px rgba(0, 0, 0, 0.28);
+      font-size: 1.8rem;
+      font-weight: bold;
+      box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.4);
     }
 
     .mega-grid .ball {
-      background: radial-gradient(circle at 30% 30%, #36c98d, #14875b);
+      background: var(--mega-color);
     }
 
     .news-item {
-      padding: 1rem 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .news-item:last-child {
-      border-bottom: none;
+      padding: 1.2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .news-item h4 {
-      font-size: 1.25rem;
-      line-height: 1.45;
+      font-size: 1.2rem;
+      line-height: 1.4;
       font-weight: 600;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
     }
 
     @media (max-width: 1024px) {
@@ -326,8 +277,7 @@
 
         document.getElementById("temp").innerText = `${data.temp}°C`;
         document.getElementById("condition").innerText = data.description;
-        document.getElementById("city-label").innerText =
-          data.cityLabel || "Americana/SP";
+        document.getElementById("city-label").innerText = data.cityLabel || "Americana/SP";
       } catch (error) {
         console.error("Erro ao atualizar clima:", error);
         document.getElementById("condition").innerText = "Erro ao ler clima";
