@@ -1,0 +1,10 @@
+{
+  "name": "painel-digital-signage",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel com clima, loterias e notícias para deploy na Vercel",
+  "license": "MIT",
+  "dependencies": {
+    "fast-xml-parser": "^4.5.3"
+  }
+}
