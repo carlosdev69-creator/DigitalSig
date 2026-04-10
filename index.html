@@ -224,6 +224,23 @@
         font-size: 1.4rem;
       }
     }
+
+    .footer-watermark {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.22);
+    letter-spacing: 1px;
+    z-index: 1;
+    pointer-events: none;
+    user-select: none;
+    }
+
+
+
+
   </style>
 </head>
 <body>
@@ -260,6 +277,11 @@
       <div id="news-container">Buscando notícias...</div>
     </div>
   </main>
+
+   <div class="footer-watermark">
+        www.itea.com.br
+    </div>
+
 
   <script>
     const CONFIG = {
@@ -400,5 +422,6 @@
     refreshAll();
     setInterval(refreshAll, CONFIG.INTERVAL_REFRESH);
   </script>
+ 
 </body>
 </html>
